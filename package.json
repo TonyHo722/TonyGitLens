@@ -1,0 +1,114 @@
+{
+  "name": "tonygitlens",
+  "displayName": "TonyGitLens",
+  "description": "Fast, lightweight GitLens-inspired extension for viewing Git worktrees and commits",
+  "version": "0.1.0",
+  "publisher": "tonyho",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "SCM Providers",
+    "Other"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onView:tonygitlens.worktreesView"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "tonygitlens-container",
+          "title": "TonyGitLens",
+          "icon": "$(git-branch)"
+        }
+      ]
+    },
+    "views": {
+      "tonygitlens-container": [
+        {
+          "id": "tonygitlens.worktreesView",
+          "name": "Worktrees & Commits"
+        }
+      ],
+      "scm": [
+        {
+          "id": "tonygitlens.worktreesViewScm",
+          "name": "Worktrees (TonyGitLens)"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "tonygitlens.refresh",
+        "title": "Refresh Worktrees",
+        "icon": "$(refresh)",
+        "category": "TonyGitLens"
+      },
+      {
+        "command": "tonygitlens.openWorktree",
+        "title": "Open Worktree in New Window",
+        "icon": "$(window)",
+        "category": "TonyGitLens"
+      },
+      {
+        "command": "tonygitlens.revealInFileExplorer",
+        "title": "Reveal in File Explorer",
+        "icon": "$(folder-opened)",
+        "category": "TonyGitLens"
+      },
+      {
+        "command": "tonygitlens.copyCommitSha",
+        "title": "Copy Commit SHA",
+        "icon": "$(copy)",
+        "category": "TonyGitLens"
+      },
+      {
+        "command": "tonygitlens.diffCommitFile",
+        "title": "View Changes",
+        "category": "TonyGitLens"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "tonygitlens.refresh",
+          "when": "view == tonygitlens.worktreesView || view == tonygitlens.worktreesViewScm",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "tonygitlens.openWorktree",
+          "when": "viewItem == worktree",
+          "group": "inline"
+        },
+        {
+          "command": "tonygitlens.revealInFileExplorer",
+          "when": "viewItem == worktree",
+          "group": "worktree_actions@1"
+        },
+        {
+          "command": "tonygitlens.copyCommitSha",
+          "when": "viewItem == commit",
+          "group": "commit_actions@1"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "package": "node esbuild.js --production",
+    "typecheck": "tsc --noEmit",
+    "test": "node -e \"require('esbuild').buildSync({entryPoints:['test/gitCliService.test.ts'],bundle:true,platform:'node',outfile:'dist/test.js',external:['vscode']});\" && node dist/test.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/vscode": "^1.90.0",
+    "esbuild": "^0.21.5",
+    "typescript": "^5.4.5"
+  }
+}
