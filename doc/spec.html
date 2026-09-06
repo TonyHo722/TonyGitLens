@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TonyGitLens — Technical Specification & GitLens Survey</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({ startOnLoad: true, theme: 'dark' });
+  </script>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --bg-surface: #161b22;
+      --bg-card: #1f242c;
+      --border: #30363d;
+      --border-accent: #388bfd;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --accent: #58a6ff;
+      --accent-glow: rgba(88, 166, 255, 0.15);
+      --green: #3fb950;
+      --purple: #bc8cff;
+      --orange: #f0883e;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      line-height: 1.65;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Sidebar Navigation */
+    .sidebar {
+      width: 280px;
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 2rem 1.25rem;
+      flex-shrink: 0;
+    }
+
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 800;
+      font-size: 1.25rem;
+      color: #fff;
+      margin-bottom: 2rem;
+      text-decoration: none;
+    }
+
+    .sidebar-brand .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #58a6ff, #bc8cff);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 900;
+      font-size: 1rem;
+    }
+
+    .nav-section-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-top: 1.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .nav-links {
+      list-style: none;
+    }
+
+    .nav-links li {
+      margin-bottom: 0.35rem;
+    }
+
+    .nav-links a {
+      display: block;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      padding: 0.4rem 0.6rem;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .nav-links a:hover {
+      color: var(--accent);
+      background: var(--accent-glow);
+    }
+
+    /* Main Content */
+    .content-wrapper {
+      flex: 1;
+      padding: 3rem 4rem;
+      max-width: 1100px;
+      overflow-y: auto;
+    }
+
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--accent-glow);
+      color: var(--accent);
+      border: 1px solid rgba(88, 166, 255, 0.3);
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    h1 {
+      font-size: 2.75rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.75rem;
+      background: linear-gradient(135deg, #ffffff 30%, #a5caff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .lead {
+      font-size: 1.2rem;
+      color: var(--text-muted);
+      margin-bottom: 2.5rem;
+      max-width: 800px;
+    }
+
+    h2 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-top: 3.5rem;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+      color: #fff;
+    }
+
+    h3 {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-top: 2rem;
+      margin-bottom: 0.75rem;
+      color: var(--text);
+    }
+
+    p {
+      margin-bottom: 1.25rem;
+      color: var(--text);
+    }
+
+    ul, ol {
+      margin-bottom: 1.5rem;
+      padding-left: 1.5rem;
+    }
+
+    li {
+      margin-bottom: 0.5rem;
+    }
+
+    /* Cards & Grids */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.25rem;
+      margin: 1.5rem 0;
+    }
+
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .card:hover {
+      border-color: var(--border-accent);
+      transform: translateY(-2px);
+    }
+
+    .card h4 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .card p {
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      margin-bottom: 0;
+    }
+
+    /* Code & Syntax */
+    code {
+      font-family: var(--font-mono);
+      font-size: 0.88em;
+      background: rgba(110, 118, 129, 0.2);
+      padding: 0.2em 0.4em;
+      border-radius: 4px;
+      color: #ff9bce;
+    }
+
+    pre {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      overflow-x: auto;
+      margin: 1.25rem 0;
+    }
+
+    pre code {
+      background: transparent;
+      padding: 0;
+      color: #e6edf3;
+      font-size: 0.88rem;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 0.85rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.92rem;
+    }
+
+    th {
+      background: var(--bg-card);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* Callout Boxes */
+    .callout {
+      border-left: 4px solid var(--accent);
+      background: var(--accent-glow);
+      padding: 1rem 1.25rem;
+      border-radius: 0 8px 8px 0;
+      margin: 1.5rem 0;
+    }
+
+    .callout.tip {
+      border-left-color: var(--green);
+      background: rgba(63, 185, 80, 0.12);
+    }
+
+    .callout.important {
+      border-left-color: var(--orange);
+      background: rgba(240, 136, 62, 0.12);
+    }
+
+    .callout-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin-bottom: 0.35rem;
+      color: #fff;
+    }
+
+    /* Mermaid Diagrams */
+    .mermaid-container {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+      display: flex;
+      justify-content: center;
+    }
+
+    /* Roadmap Timeline */
+    .roadmap {
+      position: relative;
+      padding-left: 2rem;
+      margin: 2rem 0;
+    }
+
+    .roadmap::before {
+      content: '';
+      position: absolute;
+      left: 7px;
+      top: 5px;
+      bottom: 5px;
+      width: 2px;
+      background: var(--border);
+    }
+
+    .roadmap-step {
+      position: relative;
+      margin-bottom: 1.75rem;
+    }
+
+    .roadmap-step::before {
+      content: '';
+      position: absolute;
+      left: -2rem;
+      top: 5px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--bg);
+      border: 2px solid var(--accent);
+    }
+
+    .roadmap-step.active::before {
+      background: var(--accent);
+      box-shadow: 0 0 10px var(--accent);
+    }
+
+    .roadmap-step h4 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .roadmap-step p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    footer {
+      margin-top: 4rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    @media (max-width: 900px) {
+      body {
+        flex-direction: column;
+      }
+      .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+      .content-wrapper {
+        padding: 2rem 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="#" class="sidebar-brand">
+      <div class="logo-icon">T</div>
+      <span>TonyGitLens</span>
+    </a>
+
+    <div class="nav-section-title">Overview</div>
+    <ul class="nav-links">
+      <li><a href="#summary">Executive Summary</a></li>
+      <li><a href="#core-goals">Core Features</a></li>
+    </ul>
+
+    <div class="nav-section-title">Part 1: GitLens Survey</div>
+    <ul class="nav-links">
+      <li><a href="#survey-architecture">Dual Git Layer</a></li>
+      <li><a href="#survey-worktree">Worktree Discovery</a></li>
+      <li><a href="#survey-commits">Commit Parsing</a></li>
+      <li><a href="#survey-diffs">Virtual Content Provider</a></li>
+      <li><a href="#survey-lazy-tree">Lazy TreeView Pattern</a></li>
+    </ul>
+
+    <div class="nav-section-title">Part 2: Technical Spec</div>
+    <ul class="nav-links">
+      <li><a href="#spec-architecture">System Architecture</a></li>
+      <li><a href="#spec-models">Data Models</a></li>
+      <li><a href="#spec-components">Component Breakdown</a></li>
+      <li><a href="#spec-commands">Commands & Actions</a></li>
+      <li><a href="#spec-tree-ux">TreeView Hierarchy & UX</a></li>
+      <li><a href="#spec-roadmap">Implementation Roadmap</a></li>
+    </ul>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="content-wrapper">
+
+    <div class="header-badge">
+      <span>🚀 Project Specification</span>
+    </div>
+
+    <h1>TonyGitLens Specification</h1>
+    <p class="lead">
+      Architectural survey of GitLens and detailed technical specification for <strong>TonyGitLens</strong> — a focused, high-performance VS Code extension for exploring Git Worktrees and their commits.
+    </p>
+
+    <!-- Executive Summary -->
+    <section id="summary">
+      <h2>Executive Summary</h2>
+      <p>
+        Developers using Git Worktrees frequently operate across multiple working directories linked to the same repository. While GitLens offers extensive Git capabilities, it is often considered heavyweight. <strong>TonyGitLens</strong> isolates the most valuable worktree functionality: effortless visual switching, branch and HEAD status tracking, deep commit exploration per worktree, and zero-latency side-by-side file diffs.
+      </p>
+
+      <div class="grid-2" id="core-goals">
+        <div class="card">
+          <h4>🌲 Worktree TreeView</h4>
+          <p>Displays main & linked worktrees, active checkout flags, branch tracking, and lock indicators in VS Code's sidebar.</p>
+        </div>
+        <div class="card">
+          <h4>📜 Commit History per Worktree</h4>
+          <p>Expand any worktree to instantly review its commit history with author, relative timestamps, and short SHAs.</p>
+        </div>
+        <div class="card">
+          <h4>🔍 File Diffs via Virtual URI</h4>
+          <p>Inspect changes per commit using native VS Code diff views powered by a custom <code>tonygitlens://</code> provider.</p>
+        </div>
+        <div class="card">
+          <h4>⚡ Lightweight & Fast</h4>
+          <p>Scaffolded with TypeScript and esbuild; utilizes native Git CLI streaming and lazy loading for instantaneous responsiveness.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Part 1: GitLens Survey -->
+    <section id="survey-architecture">
+      <h2>Part 1: Survey of How GitLens Works</h2>
+
+      <h3>1. Dual Git Integration Layer</h3>
+      <p>
+        GitLens avoids heavy JavaScript Git implementations (such as <code>isomorphic-git</code>) because they cannot match the performance and feature set of the native <code>git</code> binary. Instead, GitLens employs a hybrid model:
+      </p>
+      <ul>
+        <li><strong>VS Code Git API (<code>vscode.git</code>):</strong> Registers listener hooks via <code>vscode.extensions.getExtension('vscode.git')?.exports.getAPI(1)</code> to react when repositories are opened, closed, or switched.</li>
+        <li><strong>Native Git CLI Process Runner:</strong> Spawns asynchronous <code>git</code> processes with streaming buffers (<code>child_process.spawn</code> / <code>execFile</code>) for heavy operations like log parsing, worktree inspection, and commit content extraction.</li>
+      </ul>
+
+      <div class="callout tip">
+        <div class="callout-title">Key Insight for TonyGitLens</div>
+        <p>Using the native Git CLI directly gives us 100% compatibility with worktree configurations, submodules, GPG signing, and custom Git hooks without adding bloated dependencies.</p>
+      </div>
+    </section>
+
+    <section id="survey-worktree">
+      <h3>2. Worktree Discovery & State Parsing</h3>
+      <p>GitLens inspects worktrees using Git's machine-readable porcelain format:</p>
+      <pre><code>git worktree list --porcelain</code></pre>
+      <p>The porcelain format outputs structured stanzas separated by empty lines:</p>
+      <pre><code>worktree /home/user/project/main
+HEAD 4f88e1462002cbce7c10
+branch refs/heads/main
+
+worktree /home/user/project/feature-auth
+HEAD 118a72b0cde8823190ab
+branch refs/heads/feature-auth
+locked in-progress refactoring</code></pre>
+      <p>From this format, GitLens extracts:</p>
+      <ul>
+        <li><strong>Main vs. Linked Worktree:</strong> The first entry is always the primary worktree containing the <code>.git</code> directory; subsequent entries contain a <code>.git</code> file pointing to the main gitdir.</li>
+        <li><strong>Branch & Detached State:</strong> If a worktree is checked out to a tag or commit SHA, <code>detached</code> is reported instead of a branch ref.</li>
+        <li><strong>Lock Status:</strong> Reports if a worktree is locked against pruning or removal, along with any optional lock reason.</li>
+      </ul>
+    </section>
+
+    <section id="survey-commits">
+      <h3>3. High-Performance Commit Parsing</h3>
+      <p>
+        To avoid parsing arbitrary text that might break when commit messages contain special characters or newlines, GitLens invokes <code>git log</code> using custom NUL-delimited (<code>%x00</code>) formats:
+      </p>
+      <pre><code>git -C &lt;worktree-path&gt; log -n 25 --format="%H%x00%h%x00%an%x00%ae%x00%at%x00%s%x00%P"</code></pre>
+      <p>
+        The output is split strictly by <code>\0</code> delimiters, enabling robust extraction of the full hash, short hash, author name, author email, Unix timestamp, subject line, and parent hashes without regex guesswork.
+      </p>
+    </section>
+
+    <section id="survey-diffs">
+      <h3>4. Virtual Document Provider for Diffs</h3>
+      <p>
+        To display historical file contents without creating temporary files on disk, GitLens registers a <code>vscode.TextDocumentContentProvider</code> on a custom URI scheme (e.g. <code>gitlens://</code>).
+      </p>
+      <p>
+        When diffing a file in a commit against its parent:
+      </p>
+      <ol>
+        <li>TonyGitLens creates two virtual URIs:
+          <ul>
+            <li><strong>Left URI:</strong> <code>tonygitlens://commit/{parentSha}/{path}?worktree={worktreePath}</code></li>
+            <li><strong>Right URI:</strong> <code>tonygitlens://commit/{targetSha}/{path}?worktree={worktreePath}</code></li>
+          </ul>
+        </li>
+        <li>VS Code calls <code>provideTextDocumentContent(uri)</code> for each URI.</li>
+        <li>The provider executes <code>git -C &lt;worktree&gt; show &lt;sha&gt;:&lt;path&gt;</code> and delivers the file content.</li>
+        <li>VS Code opens its native diff editor:
+          <pre><code>vscode.commands.executeCommand('vscode.diff', leftUri, rightUri, `${fileName} (${shortSha})`);</code></pre>
+        </li>
+      </ol>
+    </section>
+
+    <section id="survey-lazy-tree">
+      <h3>5. Lazy-Loaded TreeView Pattern</h3>
+      <p>
+        VS Code's <code>TreeDataProvider</code> only resolves child items when an item is expanded in the UI. GitLens leverages this so that:
+      </p>
+      <ul>
+        <li>Root level only queries <code>git worktree list --porcelain</code> (~1-5 ms).</li>
+        <li>Expanding a Worktree queries the top 20 commits for that worktree.</li>
+        <li>Expanding a Commit queries modified files via <code>git show --name-status &lt;sha&gt;</code>.</li>
+        <li>Result: Near-zero memory footprint and instantaneous startup.</li>
+      </ul>
+    </section>
+
+    <!-- Part 2: Technical Specification -->
+    <section id="spec-architecture">
+      <h2>Part 2: Technical Specification for TonyGitLens</h2>
+
+      <h3>1. System Architecture</h3>
+      <div class="mermaid-container">
+        <div class="mermaid">
+graph TD
+    UI[VS Code Sidebar / Activity Bar] -->|User Interaction| WTP[WorktreeTreeDataProvider]
+    WTP -->|1. List Worktrees| GCS[GitCliService]
+    WTP -->|2. Get Commits on Expand| GCS
+    WTP -->|3. Get Changed Files on Expand| GCS
+    GCS -->|git CLI commands| CLI[Local Git Binary]
+    WTP -->|Produces| TI[Tree Items: WorktreeItem / CommitItem / FileItem]
+    TI -->|Click Changed File| CMD[tonygitlens.diffCommitFile]
+    CMD -->|Resolve Document| CDP[CommitContentProvider]
+    CDP -->|git show sha:path| GCS
+    CDP -->|tonygitlens:// URI| DIFF[Native vscode.diff Editor]
+    VSC_GIT[vscode.git Extension] -.->|Repo Change Events| WTP
+        </div>
+      </div>
+    </section>
+
+    <section id="spec-models">
+      <h3>2. Core Data Models</h3>
+      <p>TypeScript interfaces defined in <code>src/models/git.ts</code>:</p>
+
+      <pre><code>export interface Worktree {
+  path: string;             // Absolute filesystem path
+  head: string;             // Full commit hash (HEAD)
+  branch?: string;          // e.g. "refs/heads/main" or "main"
+  isMain: boolean;          // Primary working tree vs linked worktree
+  isCurrent: boolean;       // Matches current active VS Code workspace folder
+  isLocked: boolean;        // Locked against pruning
+  lockReason?: string;
+  isDetached: boolean;      // Detached HEAD state
+}
+
+export interface Commit {
+  hash: string;             // Full 40-char SHA
+  shortHash: string;        // 7-8 char SHA
+  authorName: string;
+  authorEmail: string;
+  date: Date;
+  subject: string;
+  parents: string[];
+  worktreePath: string;
+}
+
+export interface CommitFileChange {
+  status: 'A' | 'M' | 'D' | 'R' | 'C' | 'U';  // Added, Modified, Deleted, etc.
+  path: string;             // Relative path in repository
+  originalPath?: string;    // In case of rename/copy
+  commitHash: string;
+  worktreePath: string;
+}</code></pre>
+    </section>
+
+    <section id="spec-components">
+      <h3>3. Component Breakdown</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Module</th>
+            <th>File Path</th>
+            <th>Responsibility</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Git CLI Service</strong></td>
+            <td><code>src/services/gitCliService.ts</code></td>
+            <td>Spawns git processes, parses porcelain outputs, and fetches file buffers at specific revisions.</td>
+          </tr>
+          <tr>
+            <td><strong>Tree Data Provider</strong></td>
+            <td><code>src/providers/worktreeTreeDataProvider.ts</code></td>
+            <td>Implements <code>vscode.TreeDataProvider</code>, manages tree state, handles expansion and pagination.</td>
+          </tr>
+          <tr>
+            <td><strong>Content Provider</strong></td>
+            <td><code>src/providers/commitContentProvider.ts</code></td>
+            <td>Implements <code>vscode.TextDocumentContentProvider</code> for <code>tonygitlens://</code> virtual diffs.</td>
+          </tr>
+          <tr>
+            <td><strong>Tree Item Classes</strong></td>
+            <td><code>src/tree/*.ts</code></td>
+            <td>Defines <code>WorktreeItem</code>, <code>CommitItem</code>, <code>CommitFileItem</code>, and <code>LoadMoreItem</code>.</td>
+          </tr>
+          <tr>
+            <td><strong>Commands Controller</strong></td>
+            <td><code>src/commands/index.ts</code></td>
+            <td>Registers VS Code commands: open worktree, switch window, diff file, copy commit SHA.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="spec-commands">
+      <h3>4. Commands & User Actions</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Command ID</th>
+            <th>Title</th>
+            <th>Trigger Location</th>
+            <th>Behavior</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>tonygitlens.refresh</code></td>
+            <td>Refresh Worktrees</td>
+            <td>View Title Menu</td>
+            <td>Re-queries worktrees and refreshes the tree view.</td>
+          </tr>
+          <tr>
+            <td><code>tonygitlens.openWorktree</code></td>
+            <td>Open in New Window</td>
+            <td>Worktree Item Context Menu</td>
+            <td>Invokes <code>vscode.openFolder</code> with <code>forceNewWindow: true</code>.</td>
+          </tr>
+          <tr>
+            <td><code>tonygitlens.revealInFileExplorer</code></td>
+            <td>Reveal in File Explorer</td>
+            <td>Worktree Item Context Menu</td>
+            <td>Opens the worktree path in native OS file explorer.</td>
+          </tr>
+          <tr>
+            <td><code>tonygitlens.diffCommitFile</code></td>
+            <td>View Changes</td>
+            <td>Click on File Item</td>
+            <td>Opens side-by-side diff comparing commit revision against parent.</td>
+          </tr>
+          <tr>
+            <td><code>tonygitlens.copyCommitSha</code></td>
+            <td>Copy Commit SHA</td>
+            <td>Commit Item Context Menu</td>
+            <td>Copies the full SHA to the user's system clipboard.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="spec-tree-ux">
+      <h3>5. TreeView Hierarchy & UX</h3>
+      <p>The sidebar view is designed with clear visual hierarchy:</p>
+      <pre><code>▾ 🌿 main [Current] (/home/tonyho/workspace/repo)
+    ▾ 📦 7a1f2b3 Fix authentication token renewal (2 hours ago by Tony)
+        📄 auth.ts (M)
+        📄 tokenProvider.ts (M)
+    ▸ 📦 9b4d8c1 Add worktree status indicators (yesterday by Tony)
+    ▸ 📦 c3e2f10 Initial commit (3 days ago by Tony)
+    ➕ Load more commits...
+▸ 🌿 feature-ui (/home/tonyho/workspace/repo-feature-ui)
+▸ 🌿 hotfix-502 [Locked: Urgent fix] (/home/tonyho/workspace/repo-hotfix)</code></pre>
+    </section>
+
+    <section id="spec-roadmap">
+      <h3>6. Implementation Roadmap</h3>
+      <div class="roadmap">
+        <div class="roadmap-step active">
+          <h4>Phase 1: Project Setup & Scaffolding</h4>
+          <p>Initialize <code>package.json</code>, <code>tsconfig.json</code>, <code>esbuild.js</code>, and compile verification.</p>
+        </div>
+        <div class="roadmap-step">
+          <h4>Phase 2: Git CLI Service Implementation</h4>
+          <p>Implement safe CLI runner, <code>git worktree list --porcelain</code> parser, and custom format <code>git log</code> parser.</p>
+        </div>
+        <div class="roadmap-step">
+          <h4>Phase 3: TreeDataProvider & UI Components</h4>
+          <p>Construct the hierarchical TreeItems with icons, descriptions, and lazy-loading pagination.</p>
+        </div>
+        <div class="roadmap-step">
+          <h4>Phase 4: Diff Provider & Commands</h4>
+          <p>Implement virtual document provider <code>tonygitlens://</code> and wire up click-to-diff navigation.</p>
+        </div>
+        <div class="roadmap-step">
+          <h4>Phase 5: Testing & Polishing</h4>
+          <p>Verify multi-worktree handling, detached HEAD cases, locked worktree display, and packaging.</p>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <span>TonyGitLens Specification v1.0.0</span>
+      <span>Target Workspace: <code>/home/tonyho/workspace/vscode_ext</code></span>
+    </footer>
+
+  </main>
+</body>
+</html>
