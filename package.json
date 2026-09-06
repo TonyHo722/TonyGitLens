@@ -68,6 +68,11 @@
         "command": "tonygitlens.diffCommitFile",
         "title": "View Changes",
         "category": "TonyGitLens"
+      },
+      {
+        "command": "tonygitlens.loadMoreCommits",
+        "title": "Load More Commits",
+        "category": "TonyGitLens"
       }
     ],
     "menus": {
