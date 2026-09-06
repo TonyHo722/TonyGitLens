@@ -3,7 +3,7 @@
   "configurations": [
     {
       "name": "Run Extension (TonyGitLens)",
-      "type": "extensionDevelopmentHost",
+      "type": "extensionHost",
       "request": "launch",
       "args": [
         "--extensionDevelopmentPath=${workspaceFolder}"

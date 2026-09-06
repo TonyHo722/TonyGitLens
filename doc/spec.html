@@ -424,6 +424,7 @@
       <li><a href="#spec-commands">Commands & Actions</a></li>
       <li><a href="#spec-tree-ux">TreeView Hierarchy & UX</a></li>
       <li><a href="#spec-roadmap">Implementation Roadmap</a></li>
+      <li><a href="#spec-loading">Loading & Installation</a></li>
     </ul>
   </aside>
 
@@ -715,26 +716,75 @@ export interface CommitFileChange {
       <h3>6. Implementation Roadmap</h3>
       <div class="roadmap">
         <div class="roadmap-step active">
-          <h4>Phase 1: Project Setup & Scaffolding</h4>
-          <p>Initialize <code>package.json</code>, <code>tsconfig.json</code>, <code>esbuild.js</code>, and compile verification.</p>
+          <h4>Phase 1: Project Setup & Scaffolding — <span style="color: var(--green);">✓ Completed</span></h4>
+          <p>Initialized <code>package.json</code>, <code>tsconfig.json</code>, <code>esbuild.js</code>, and build verification.</p>
         </div>
-        <div class="roadmap-step">
-          <h4>Phase 2: Git CLI Service Implementation</h4>
-          <p>Implement safe CLI runner, <code>git worktree list --porcelain</code> parser, and custom format <code>git log</code> parser.</p>
+        <div class="roadmap-step active">
+          <h4>Phase 2: Git CLI Service Implementation — <span style="color: var(--green);">✓ Completed</span></h4>
+          <p>Implemented safe CLI runner, <code>git worktree list --porcelain</code> parser, and custom format <code>git log</code> parser with automated tests.</p>
         </div>
-        <div class="roadmap-step">
-          <h4>Phase 3: TreeDataProvider & UI Components</h4>
-          <p>Construct the hierarchical TreeItems with icons, descriptions, and lazy-loading pagination.</p>
+        <div class="roadmap-step active">
+          <h4>Phase 3: TreeDataProvider & UI Components — <span style="color: var(--green);">✓ Completed</span></h4>
+          <p>Constructed hierarchical TreeItems (<code>WorktreeItem</code>, <code>CommitItem</code>, <code>CommitFileItem</code>, <code>LoadMoreItem</code>) with lazy-loading.</p>
         </div>
-        <div class="roadmap-step">
-          <h4>Phase 4: Diff Provider & Commands</h4>
-          <p>Implement virtual document provider <code>tonygitlens://</code> and wire up click-to-diff navigation.</p>
+        <div class="roadmap-step active">
+          <h4>Phase 4: Diff Provider & Commands — <span style="color: var(--green);">✓ Completed</span></h4>
+          <p>Implemented virtual document provider <code>tonygitlens://</code> and click-to-diff native VS Code diff editor.</p>
         </div>
-        <div class="roadmap-step">
-          <h4>Phase 5: Testing & Polishing</h4>
-          <p>Verify multi-worktree handling, detached HEAD cases, locked worktree display, and packaging.</p>
+        <div class="roadmap-step active">
+          <h4>Phase 5: Packaging & Installation — <span style="color: var(--green);">✓ Completed & Verified</span></h4>
+          <p>Generated standalone <code>tonygitlens-0.1.0.vsix</code> package and verified installation into VS Code.</p>
         </div>
       </div>
+    </section>
+
+    <section id="spec-loading">
+      <h3>7. Loading & Installation Guide</h3>
+      <p>
+        TonyGitLens is packaged as a self-contained <code>.vsix</code> extension bundle, making it immediately installable in any VS Code desktop or remote environment.
+      </p>
+
+      <div class="callout tip">
+        <div class="callout-title">🎉 Primary Method (Tested & Verified Working)</div>
+        <p><strong>Option A — Right-Click VSIX in VS Code Explorer:</strong></p>
+        <ol style="margin-top: 0.5rem; margin-bottom: 0;">
+          <li>In your VS Code file explorer sidebar, navigate to <code>tonygitlens-0.1.0.vsix</code>.</li>
+          <li>Right-click the file and select <strong>"Install Extension VSIX"</strong>.</li>
+          <li>VS Code installs the extension immediately. The <strong>TonyGitLens</strong> icon appears in your Activity Bar and in the Source Control panel!</li>
+        </ol>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h4>⌨️ Option B: Command Palette</h4>
+          <p>
+            Press <code>Ctrl+Shift+P</code> (or <code>Cmd+Shift+P</code>), type <strong><code>Extensions: Install from VSIX...</code></strong>, and select <code>tonygitlens-0.1.0.vsix</code> from the file picker.
+          </p>
+        </div>
+        <div class="card">
+          <h4>💻 Option C: Terminal Command</h4>
+          <p>
+            Run the standard VS Code CLI command in your terminal:
+            <pre><code>code --install-extension /home/tonyho/workspace/vscode_ext/tonygitlens-0.1.0.vsix</code></pre>
+          </p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 1rem;">
+        <h4>🐞 Option D: Developer Debug Mode (F5)</h4>
+        <p>
+          For active extension development and debugging:
+        </p>
+        <ol style="margin-top: 0.5rem; margin-bottom: 0.75rem;">
+          <li>Open the extension project folder in VS Code.</li>
+          <li>Press <strong><code>F5</code></strong> (or select <strong>Run > Start Debugging</strong>).</li>
+          <li>VS Code launches an isolated <strong>Extension Development Host</strong> window using the configured <code>extensionHost</code> launch profile.</li>
+        </ol>
+      </div>
+
+      <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem; color: #fff;">Packaging Command Reference</h4>
+      <p>To rebuild the <code>.vsix</code> package after making code changes, run:</p>
+      <pre><code>npx @vscode/vsce package --no-dependencies --allow-missing-repository</code></pre>
     </section>
 
     <footer>
