@@ -205,12 +205,14 @@ export function activate(context: vscode.ExtensionContext) {
             compareBranch
           );
           compareTreeDataProvider.setComparison(comparison);
+          treeDataProvider.setWorktreeComparison(baseBranch, comparison);
+          vscode.window.showInformationMessage(`TonyGitLens: Comparing ${baseBranch} ↔ ${compareBranch}`);
         }
       );
     }
   );
 
-  // Command: Compare Branches (Generic 2-step QuickPick)
+  // Command: Compare Branches (defaults to current branch as base — 1-selection flow)
   const compareBranchesCmd = vscode.commands.registerCommand(
     'tonygitlens.compareBranches',
     async () => {
@@ -226,43 +228,45 @@ export function activate(context: vscode.ExtensionContext) {
         return;
       }
 
-      const baseOptions = branches.map((b) => ({
-        label: b.name,
-        description: b.isRemote ? '(remote)' : b.isCurrent ? '(current)' : '',
-        iconPath: new vscode.ThemeIcon(b.isRemote ? 'cloud' : 'git-branch'),
-      }));
+      // Automatically determine base branch from current checkout
+      const baseBranch = branches.find((b) => b.isCurrent)?.name || branches[0].name;
 
-      const basePick = await vscode.window.showQuickPick(baseOptions, {
-        placeHolder: 'Select BASE branch (comparison reference)',
-      });
-      if (!basePick) return;
-
-      const compareOptions = branches
-        .filter((b) => b.name !== basePick.label)
+      const targetOptions = branches
+        .filter((b) => b.name !== baseBranch)
         .map((b) => ({
           label: b.name,
-          description: b.isRemote ? '(remote)' : b.isCurrent ? '(current)' : '',
+          description: b.isRemote ? '(remote)' : '',
           iconPath: new vscode.ThemeIcon(b.isRemote ? 'cloud' : 'git-branch'),
         }));
 
-      const comparePick = await vscode.window.showQuickPick(compareOptions, {
-        placeHolder: `Select TARGET branch to compare against '${basePick.label}'`,
+      if (targetOptions.length === 0) {
+        vscode.window.showInformationMessage(`No other branches found to compare with '${baseBranch}'.`);
+        return;
+      }
+
+      const comparePick = await vscode.window.showQuickPick(targetOptions, {
+        placeHolder: `Select branch to compare with '${baseBranch}'`,
       });
       if (!comparePick) return;
+
+      const compareBranch = comparePick.label;
+      outputChannel.appendLine(`Comparing branches: ${baseBranch} ↔ ${compareBranch}`);
 
       vscode.window.withProgress(
         {
           location: vscode.ProgressLocation.Notification,
-          title: `Comparing ${basePick.label} with ${comparePick.label}...`,
+          title: `Comparing ${baseBranch} with ${compareBranch}...`,
           cancellable: false,
         },
         async () => {
           const comparison = await gitService.getBranchComparison(
             repoRoot,
-            basePick.label,
-            comparePick.label
+            baseBranch,
+            compareBranch
           );
           compareTreeDataProvider.setComparison(comparison);
+          treeDataProvider.setWorktreeComparison(baseBranch, comparison);
+          vscode.window.showInformationMessage(`TonyGitLens: Comparing ${baseBranch} ↔ ${compareBranch}`);
         }
       );
     }
@@ -284,6 +288,7 @@ export function activate(context: vscode.ExtensionContext) {
         current.baseBranch
       );
       compareTreeDataProvider.setComparison(swapped);
+      treeDataProvider.setWorktreeComparison(current.compareBranch, swapped);
     }
   );
 
@@ -292,6 +297,7 @@ export function activate(context: vscode.ExtensionContext) {
     'tonygitlens.clearComparison',
     () => {
       compareTreeDataProvider.clearComparison();
+      treeDataProvider.clearWorktreeComparison();
     }
   );
 
@@ -307,6 +313,7 @@ export function activate(context: vscode.ExtensionContext) {
           current.compareBranch
         );
         compareTreeDataProvider.setComparison(refreshed);
+        treeDataProvider.setWorktreeComparison(current.baseBranch, refreshed);
       }
     }
   );

@@ -1004,22 +1004,28 @@ flowchart TD
         </div>
       </div>
 
-      <h4>Comparison TreeView UX</h4>
+      <h4>Dual TreeView Integration UX</h4>
       <p>
-        The comparison is presented as an actionable hierarchy inside the <strong>Compare Branches</strong> panel:
+        The comparison is accessible directly under each branch in the <strong>Worktrees & Commits</strong> view, as well as in the dedicated <strong>Compare Branches</strong> panel:
       </p>
-      <pre><code>▾ 🔀 feature-auth ↔ main [3 ahead, 1 behind] (Actions: [⇄ Swap] [✕ Clear])
-    ▾ 📁 Files Changed (4)
-        📄 src/auth/jwt.ts [M]
-        📄 src/auth/tokenProvider.ts [A]
-        📄 src/legacy/authOld.ts [D]
-        📄 config/security.json [M]
-    ▾ 📦 Commits Ahead (3)
-        ▸ 📦 7a1f2b3 Add JWT validation middleware (2h ago by Tony)
-        ▸ 📦 9b4d8c1 Integrate token provider (yesterday by Tony)
-        ▸ 📦 c3e2f10 Initial auth structure (3d ago by Tony)
-    ▾ 📦 Commits Behind (1)
-        ▸ 📦 8e4c2a1 Update CI workflow (yesterday by Tony)</code></pre>
+      <pre><code>▾ 🌿 main (current) (/home/tonyho/workspace/vscode_ext)
+    ▾ 🔀 Compared with 'feature-auth' [1 ahead, 3 behind • 4 files]
+        ▾ 📁 Files Changed (4)
+            📄 src/auth/jwt.ts [M]
+            📄 src/auth/tokenProvider.ts [A]
+            📄 src/legacy/authOld.ts [D]
+            📄 config/security.json [M]
+        ▾ 📦 Commits Ahead (1)
+            ▸ 📦 8e4c2a1 Update CI workflow (yesterday by Tony)
+        ▾ 📦 Commits Behind (3)
+            ▸ 📦 7a1f2b3 Add JWT validation middleware (2h ago by Tony)
+            ▸ 📦 9b4d8c1 Integrate token provider (yesterday by Tony)
+            ▸ 📦 c3e2f10 Initial auth structure (3d ago by Tony)
+    ▾ 📦 172d199 feat: implement Phase 6... (Tony Ho)
+    ▸ 📦 22a38a9 docs: align branch comparison specification...
+▸ 🌿 0906test (/home/tonyho/workspace/vscode_ext_worktree)
+    🔀 Compare '0906test' with... (click to select target)
+    ▸ 📦 beb1709 feat: implement TreeView components...</code></pre>
 
       <h4>Core Data Models</h4>
       <p>New TypeScript definitions added to <code>src/models/git.ts</code>:</p>
