@@ -30,6 +30,10 @@
         {
           "id": "tonygitlens.worktreesView",
           "name": "Worktrees & Commits"
+        },
+        {
+          "id": "tonygitlens.compareView",
+          "name": "Compare Branches"
         }
       ],
       "scm": [
@@ -73,6 +77,41 @@
         "command": "tonygitlens.loadMoreCommits",
         "title": "Load More Commits",
         "category": "TonyGitLens"
+      },
+      {
+        "command": "tonygitlens.compareWorktreeBranch",
+        "title": "Compare with...",
+        "icon": "$(git-compare)",
+        "category": "TonyGitLens"
+      },
+      {
+        "command": "tonygitlens.compareBranches",
+        "title": "Compare Branches...",
+        "icon": "$(git-compare)",
+        "category": "TonyGitLens"
+      },
+      {
+        "command": "tonygitlens.swapComparison",
+        "title": "Swap Base and Target",
+        "icon": "$(arrow-swap)",
+        "category": "TonyGitLens"
+      },
+      {
+        "command": "tonygitlens.clearComparison",
+        "title": "Clear Comparison",
+        "icon": "$(clear-all)",
+        "category": "TonyGitLens"
+      },
+      {
+        "command": "tonygitlens.refreshComparison",
+        "title": "Refresh Comparison",
+        "icon": "$(refresh)",
+        "category": "TonyGitLens"
+      },
+      {
+        "command": "tonygitlens.diffCompareFile",
+        "title": "View File Diff",
+        "category": "TonyGitLens"
       }
     ],
     "menus": {
@@ -81,13 +120,43 @@
           "command": "tonygitlens.refresh",
           "when": "view == tonygitlens.worktreesView || view == tonygitlens.worktreesViewScm",
           "group": "navigation"
+        },
+        {
+          "command": "tonygitlens.swapComparison",
+          "when": "view == tonygitlens.compareView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "tonygitlens.refreshComparison",
+          "when": "view == tonygitlens.compareView",
+          "group": "navigation@2"
+        },
+        {
+          "command": "tonygitlens.clearComparison",
+          "when": "view == tonygitlens.compareView",
+          "group": "navigation@3"
+        },
+        {
+          "command": "tonygitlens.compareBranches",
+          "when": "view == tonygitlens.compareView",
+          "group": "navigation@4"
         }
       ],
       "view/item/context": [
         {
+          "command": "tonygitlens.compareWorktreeBranch",
+          "when": "viewItem == worktree",
+          "group": "inline@1"
+        },
+        {
           "command": "tonygitlens.openWorktree",
           "when": "viewItem == worktree",
-          "group": "inline"
+          "group": "inline@2"
+        },
+        {
+          "command": "tonygitlens.compareWorktreeBranch",
+          "when": "viewItem == worktree",
+          "group": "worktree_actions@0"
         },
         {
           "command": "tonygitlens.revealInFileExplorer",
@@ -98,6 +167,16 @@
           "command": "tonygitlens.copyCommitSha",
           "when": "viewItem == commit",
           "group": "commit_actions@1"
+        },
+        {
+          "command": "tonygitlens.swapComparison",
+          "when": "viewItem == compareRoot",
+          "group": "inline@1"
+        },
+        {
+          "command": "tonygitlens.clearComparison",
+          "when": "viewItem == compareRoot",
+          "group": "inline@2"
         }
       ]
     }

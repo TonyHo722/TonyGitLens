@@ -83,7 +83,40 @@ detached
   assert.ok(allWorktrees.length >= 1);
   console.log(`✓ dynamic worktree query verified (${allWorktrees[0].branch})`);
 
-  console.log('\n🎉 ALL 7 TESTS PASSED SUCCESSFULLY!');
+  // Test 8: getBranches
+  console.log('Test 8: getBranches');
+  const branches = await service.getBranches(repoRoot);
+  assert.ok(branches.length >= 1, 'Should find at least 1 branch');
+  const currentBranch = branches.find(b => b.isCurrent);
+  assert.ok(currentBranch, 'Should detect current branch');
+  assert.strictEqual(currentBranch.name, 'main', 'Current branch should be main');
+  console.log(`✓ getBranches passed (Found ${branches.length} branch(es), current is ${currentBranch.name})`);
+
+  // Test 9: parseComparisonFiles
+  console.log('Test 9: parseComparisonFiles');
+  const sampleDiff = `M\tsrc/extension.ts\nA\tsrc/newModule.ts\nD\toldFile.ts\nR100\tsrc/old.ts\tsrc/renamed.ts`;
+  const parsedDiff = service.parseComparisonFiles(sampleDiff, 'main', 'feature', repoRoot);
+  assert.strictEqual(parsedDiff.length, 4);
+  assert.strictEqual(parsedDiff[0].status, 'M');
+  assert.strictEqual(parsedDiff[0].path, 'src/extension.ts');
+  assert.strictEqual(parsedDiff[1].status, 'A');
+  assert.strictEqual(parsedDiff[2].status, 'D');
+  assert.strictEqual(parsedDiff[3].status, 'R');
+  assert.strictEqual(parsedDiff[3].path, 'src/renamed.ts');
+  assert.strictEqual(parsedDiff[3].originalPath, 'src/old.ts');
+  console.log('✓ parseComparisonFiles passed');
+
+  // Test 10: getBranchComparison self-comparison
+  console.log('Test 10: getBranchComparison');
+  const comparison = await service.getBranchComparison(repoRoot, 'main', 'main');
+  assert.strictEqual(comparison.baseBranch, 'main');
+  assert.strictEqual(comparison.compareBranch, 'main');
+  assert.strictEqual(comparison.aheadCommits.length, 0);
+  assert.strictEqual(comparison.behindCommits.length, 0);
+  assert.strictEqual(comparison.fileChanges.length, 0);
+  console.log('✓ getBranchComparison passed (self-comparison returns 0 changes as expected)');
+
+  console.log('\n🎉 ALL 10 TESTS PASSED SUCCESSFULLY!');
 }
 
 runTests().catch(err => {

@@ -13,13 +13,13 @@ export class CommitContentProvider implements vscode.TextDocumentContentProvider
   }
 
   /**
-   * Generates a virtual URI for a file at a specific commit.
+   * Generates a virtual URI for a file at a specific revision (commit, branch, or tag).
    */
-  public static toUri(worktreePath: string, commitHash: string, relativePath: string): vscode.Uri {
+  public static toUri(worktreePath: string, ref: string, relativePath: string): vscode.Uri {
     const cleanPath = relativePath.replace(/\\/g, '/').replace(/^\//, '');
     const query = new URLSearchParams({
       worktree: worktreePath,
-      ref: commitHash,
+      ref,
     }).toString();
 
     return vscode.Uri.from({

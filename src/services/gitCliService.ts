@@ -1,7 +1,7 @@
 import { execFile } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
-import { Worktree, Commit, CommitFileChange } from '../models/git';
+import { Worktree, Commit, CommitFileChange, BranchInfo, BranchComparison, ComparisonFileChange } from '../models/git';
 
 export class GitCliService {
   private readonly gitBinary: string;
@@ -272,5 +272,163 @@ export class GitCliService {
       // If file didn't exist at this commit (e.g. added in commit, parent doesn't have it)
       return '';
     }
+  }
+
+  /**
+   * Retrieves all local and remote branches for the repository.
+   */
+  public async getBranches(repoRoot: string): Promise<BranchInfo[]> {
+    try {
+      const output = await this.exec(
+        ['branch', '-a', '--format=%(HEAD)|%(refname:short)'],
+        repoRoot
+      );
+      const branches: BranchInfo[] = [];
+      const lines = output.trim().split(/\r?\n/);
+
+      for (const line of lines) {
+        if (!line.trim()) {
+          continue;
+        }
+
+        const pipeIndex = line.indexOf('|');
+        if (pipeIndex === -1) {
+          continue;
+        }
+
+        const headMarker = line.substring(0, pipeIndex).trim();
+        const trimmedName = line.substring(pipeIndex + 1).trim();
+
+        // Skip HEAD pointers like origin/HEAD
+        if (!trimmedName || trimmedName.endsWith('/HEAD') || trimmedName === 'HEAD') {
+          continue;
+        }
+
+        const isRemote = trimmedName.startsWith('origin/') || trimmedName.startsWith('remotes/');
+        const isCurrent = headMarker === '*';
+
+        branches.push({
+          name: trimmedName,
+          isRemote,
+          isCurrent,
+        });
+      }
+
+      // Sort: Current branch first, then local branches, then remote branches
+      return branches.sort((a, b) => {
+        if (a.isCurrent) return -1;
+        if (b.isCurrent) return 1;
+        if (!a.isRemote && b.isRemote) return -1;
+        if (a.isRemote && !b.isRemote) return 1;
+        return a.name.localeCompare(b.name);
+      });
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Compares two branches: calculates ahead commits, behind commits, and 3-dot file differences.
+   */
+  public async getBranchComparison(
+    repoRoot: string,
+    baseBranch: string,
+    compareBranch: string
+  ): Promise<BranchComparison> {
+    const format = '%H%x00%h%x00%an%x00%ae%x00%at%x00%s%x00%P';
+
+    // 1. Ahead commits: reachable from compareBranch but not baseBranch
+    let aheadCommits: Commit[] = [];
+    try {
+      const aheadOutput = await this.exec(
+        ['log', `${baseBranch}..${compareBranch}`, `--format=${format}`, '-n', '100'],
+        repoRoot
+      );
+      aheadCommits = this.parseCommits(aheadOutput, repoRoot);
+    } catch {
+      aheadCommits = [];
+    }
+
+    // 2. Behind commits: reachable from baseBranch but not compareBranch
+    let behindCommits: Commit[] = [];
+    try {
+      const behindOutput = await this.exec(
+        ['log', `${compareBranch}..${baseBranch}`, `--format=${format}`, '-n', '100'],
+        repoRoot
+      );
+      behindCommits = this.parseCommits(behindOutput, repoRoot);
+    } catch {
+      behindCommits = [];
+    }
+
+    // 3. File changes: three-dot diff from common merge-base
+    let fileChanges: ComparisonFileChange[] = [];
+    try {
+      const diffOutput = await this.exec(
+        ['diff', '--name-status', `${baseBranch}...${compareBranch}`],
+        repoRoot
+      );
+      fileChanges = this.parseComparisonFiles(diffOutput, baseBranch, compareBranch, repoRoot);
+    } catch {
+      fileChanges = [];
+    }
+
+    return {
+      repoRoot,
+      baseBranch,
+      compareBranch,
+      aheadCommits,
+      behindCommits,
+      fileChanges,
+    };
+  }
+
+  /**
+   * Parses git diff --name-status output for branch comparisons.
+   */
+  public parseComparisonFiles(
+    output: string,
+    baseBranch: string,
+    compareBranch: string,
+    repoRoot: string
+  ): ComparisonFileChange[] {
+    const files: ComparisonFileChange[] = [];
+    const lines = output.trim().split(/\r?\n/);
+
+    for (const line of lines) {
+      if (!line.trim()) {
+        continue;
+      }
+
+      const parts = line.split(/\t+/);
+      if (parts.length >= 2) {
+        const rawStatus = parts[0].trim();
+        const statusCode = (rawStatus[0] || 'M') as ComparisonFileChange['status'];
+
+        if (rawStatus.startsWith('R') || rawStatus.startsWith('C')) {
+          const originalPath = parts[1].trim();
+          const targetPath = parts[2] ? parts[2].trim() : originalPath;
+          files.push({
+            status: statusCode,
+            path: targetPath,
+            originalPath,
+            baseRef: baseBranch,
+            compareRef: compareBranch,
+            repoRoot,
+          });
+        } else {
+          const filePath = parts[1].trim();
+          files.push({
+            status: statusCode,
+            path: filePath,
+            baseRef: baseBranch,
+            compareRef: compareBranch,
+            repoRoot,
+          });
+        }
+      }
+    }
+
+    return files;
   }
 }
