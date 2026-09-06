@@ -71,8 +71,29 @@
       top: 0;
       height: 100vh;
       overflow-y: auto;
-      padding: 2rem 1.25rem;
+      overflow-x: hidden;
+      padding: 1.5rem 1.25rem;
       flex-shrink: 0;
+      transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), padding 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+      white-space: nowrap;
+    }
+
+    body.sidebar-collapsed .sidebar {
+      width: 0 !important;
+      min-width: 0 !important;
+      padding: 0 !important;
+      border-right: none !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid rgba(48, 54, 61, 0.4);
     }
 
     .sidebar-brand {
@@ -82,8 +103,66 @@
       font-weight: 800;
       font-size: 1.25rem;
       color: #fff;
-      margin-bottom: 2rem;
       text-decoration: none;
+    }
+
+    .sidebar-toggle-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 6px;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .sidebar-toggle-btn:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+      background: var(--accent-glow);
+    }
+
+    /* Floating button to restore collapsed sidebar */
+    .sidebar-expand-btn {
+      display: none;
+      position: fixed;
+      top: 1.25rem;
+      left: 1.25rem;
+      z-index: 1000;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-accent);
+      color: var(--text);
+      padding: 0.4rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+      transition: all 0.2s ease;
+    }
+
+    .sidebar-expand-btn:hover {
+      background: var(--accent-glow);
+      color: var(--accent);
+      border-color: var(--accent);
+      box-shadow: 0 4px 20px rgba(88, 166, 255, 0.3);
+      transform: translateY(-1px);
+    }
+
+    body.sidebar-collapsed .sidebar-expand-btn {
+      display: inline-flex;
+    }
+
+    body.sidebar-collapsed .content-wrapper {
+      max-width: 1400px;
+      padding-left: 4.5rem;
     }
 
     .sidebar-brand .logo-icon {
@@ -511,12 +590,23 @@
 </head>
 <body>
 
+  <!-- Floating button to restore collapsed sidebar -->
+  <button class="sidebar-expand-btn" id="expand-sidebar-btn" onclick="toggleSidebar()" title="Expand Sidebar (Ctrl+B)">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline></svg>
+    <span>Sidebar</span>
+  </button>
+
   <!-- Sidebar -->
   <aside class="sidebar">
-    <a href="#" class="sidebar-brand">
-      <div class="logo-icon">T</div>
-      <span>TonyGitLens</span>
-    </a>
+    <div class="sidebar-header">
+      <a href="#" class="sidebar-brand">
+        <div class="logo-icon">T</div>
+        <span>TonyGitLens</span>
+      </a>
+      <button class="sidebar-toggle-btn" onclick="toggleSidebar()" title="Collapse Sidebar (Ctrl+B)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="11 17 6 12 11 7"></polyline><polyline points="18 17 13 12 18 7"></polyline></svg>
+      </button>
+    </div>
 
     <div class="nav-section-title">Overview</div>
     <ul class="nav-links">
@@ -961,6 +1051,29 @@ export interface CommitFileChange {
         label.textContent = `${Math.round(diagramScale * 100)}%`;
       }
     }
+
+    // Sidebar Collapse / Expand Functionality
+    function toggleSidebar() {
+      const isCollapsed = document.body.classList.toggle('sidebar-collapsed');
+      try {
+        localStorage.setItem('tony_sidebar_collapsed', isCollapsed ? 'true' : 'false');
+      } catch (e) {}
+    }
+
+    // Restore saved sidebar preference
+    try {
+      if (localStorage.getItem('tony_sidebar_collapsed') === 'true') {
+        document.body.classList.add('sidebar-collapsed');
+      }
+    } catch (e) {}
+
+    // Keyboard shortcut: Ctrl+B or Cmd+B to toggle sidebar
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        toggleSidebar();
+      }
+    });
   </script>
 </body>
 </html>
