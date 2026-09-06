@@ -621,6 +621,7 @@
       <li><a href="#survey-commits">Commit Parsing</a></li>
       <li><a href="#survey-diffs">Virtual Content Provider</a></li>
       <li><a href="#survey-lazy-tree">Lazy TreeView Pattern</a></li>
+      <li><a href="#survey-compare">Branch Comparison</a></li>
     </ul>
 
     <div class="nav-section-title">Part 2: Technical Spec</div>
@@ -630,6 +631,7 @@
       <li><a href="#spec-components">Component Breakdown</a></li>
       <li><a href="#spec-commands">Commands & Actions</a></li>
       <li><a href="#spec-tree-ux">TreeView Hierarchy & UX</a></li>
+      <li><a href="#spec-compare">Compare 2 Branches (Phase 6)</a></li>
       <li><a href="#spec-roadmap">Implementation Roadmap</a></li>
       <li><a href="#spec-loading">Loading & Installation</a></li>
     </ul>
@@ -758,6 +760,24 @@ locked in-progress refactoring</code></pre>
         <li>Expanding a Worktree queries the top 20 commits for that worktree.</li>
         <li>Expanding a Commit queries modified files via <code>git show --name-status &lt;sha&gt;</code>.</li>
         <li>Result: Near-zero memory footprint and instantaneous startup.</li>
+      </ul>
+    </section>
+
+    <section id="survey-compare">
+      <h3>6. Reference & Branch Comparison in GitLens</h3>
+      <p>
+        GitLens provides a dedicated <strong>Search & Compare</strong> view that lets users compare any two Git references (branches, tags, or commits). Understanding how GitLens implements this:
+      </p>
+      <ul>
+        <li><strong>Comparison Semantics:</strong>
+          <ul>
+            <li><strong>Two-Dot Comparison (<code>base..compare</code>):</strong> Shows what is unique to the compare branch that is not in the base branch.</li>
+            <li><strong>Three-Dot Comparison (<code>base...compare</code>):</strong> Compares the tips of both branches starting from their common merge-base ancestor (<code>git merge-base base compare</code>). This matches what developers expect when opening a Pull Request.</li>
+          </ul>
+        </li>
+        <li><strong>File Diffs Query:</strong> Executes <code>git diff --name-status &lt;base&gt;...&lt;compare&gt;</code> to retrieve the exact list of files modified, added, deleted, or renamed between the branches.</li>
+        <li><strong>Commit Difference Query:</strong> Executes <code>git log &lt;base&gt;..&lt;compare&gt;</code> to retrieve the commits that exist on the compare branch but not the base branch (ahead commits), and optionally <code>git log &lt;compare&gt;..&lt;base&gt;</code> (behind commits).</li>
+        <li><strong>Interactive Controls:</strong> GitLens provides quick actions to <em>Swap References</em> (switch base and target), <em>Select New Branches</em> via QuickPick, and click-to-diff each changed file using VS Code's side-by-side diff editor.</li>
       </ul>
     </section>
 
@@ -948,8 +968,123 @@ export interface CommitFileChange {
 ▸ 🌿 hotfix-502 [Locked: Urgent fix] (/home/tonyho/workspace/repo-hotfix)</code></pre>
     </section>
 
+    <section id="spec-compare">
+      <h3>6. Compare 2 Branches Specification (Phase 6)</h3>
+      <p>
+        Developers frequently need to answer questions such as: <em>"What commits are on my feature branch that haven't merged into main?"</em> and <em>"What exact code changed between these two branches?"</em>. Building on GitLens's <strong>Search & Compare</strong> design, TonyGitLens will introduce a first-class <strong>Compare Branches</strong> experience.
+      </p>
+
+      <div class="mermaid-container">
+        <div class="diagram-header">
+          <div class="diagram-title">
+            <span>🔀 Branch Comparison Workflow & Architecture</span>
+          </div>
+        </div>
+        <div class="mermaid-viewport">
+          <div class="mermaid">
+flowchart TD
+    START["Trigger Compare<br/>(Title Icon / Context Menu / Palette)"] --> QP1["QuickPick 1: Select Base Branch<br/>(e.g., main)"]
+    QP1 --> QP2["QuickPick 2: Select Compare Branch<br/>(e.g., feature-auth)"]
+    QP2 --> QUERY["GitCliService<br/>1. git log base..target (Ahead)<br/>2. git log target..base (Behind)<br/>3. git diff --name-status base...target"]
+    QUERY --> PROVIDER["BranchCompareTreeDataProvider<br/>(Renders Comparison TreeView)"]
+    PROVIDER --> ROOT["Comparison Root: feature-auth ↔ main<br/>(Actions: Swap ⇄, Refresh ↻, Clear ✕)"]
+    ROOT --> FILES["📁 Files Changed (N)<br/>(Aggregated file-level diffs)"]
+    ROOT --> COMMITS["📦 Commits Ahead / Behind<br/>(Individual commit logs)"]
+    FILES --> DIFF["Click File -> vscode.diff<br/>(tonygitlens://ref/base vs tonygitlens://ref/compare)"]
+          </div>
+        </div>
+      </div>
+
+      <h4>Comparison TreeView UX</h4>
+      <p>
+        The comparison is presented as an actionable hierarchy inside the <strong>Compare Branches</strong> panel:
+      </p>
+      <pre><code>▾ 🔀 feature-auth ↔ main [3 ahead, 1 behind] (Actions: [⇄ Swap] [✕ Clear])
+    ▾ 📁 Files Changed (4)
+        📄 src/auth/jwt.ts [M]
+        📄 src/auth/tokenProvider.ts [A]
+        📄 src/legacy/authOld.ts [D]
+        📄 config/security.json [M]
+    ▾ 📦 Commits Ahead (3)
+        ▸ 📦 7a1f2b3 Add JWT validation middleware (2h ago by Tony)
+        ▸ 📦 9b4d8c1 Integrate token provider (yesterday by Tony)
+        ▸ 📦 c3e2f10 Initial auth structure (3d ago by Tony)
+    ▾ 📦 Commits Behind (1)
+        ▸ 📦 8e4c2a1 Update CI workflow (yesterday by Tony)</code></pre>
+
+      <h4>Core Data Models</h4>
+      <p>New TypeScript definitions added to <code>src/models/git.ts</code>:</p>
+      <pre><code>export interface BranchComparison {
+  repoRoot: string;
+  baseBranch: string;
+  compareBranch: string;
+  aheadCommits: Commit[];
+  behindCommits: Commit[];
+  fileChanges: ComparisonFileChange[];
+}
+
+export interface ComparisonFileChange {
+  status: 'A' | 'M' | 'D' | 'R' | 'C' | 'U';
+  path: string;
+  originalPath?: string;
+  baseRef: string;
+  compareRef: string;
+  repoRoot: string;
+}
+
+export interface BranchInfo {
+  name: string;
+  isRemote: boolean;
+  isCurrent: boolean;
+}</code></pre>
+
+      <h4>Commands & Actions</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>Command ID</th>
+            <th>Title</th>
+            <th>Trigger Location</th>
+            <th>Behavior</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>tonygitlens.compareBranches</code></td>
+            <td>Compare Branches...</td>
+            <td>Title Bar & Command Palette</td>
+            <td>Opens interactive QuickPick selecting base & target branches.</td>
+          </tr>
+          <tr>
+            <td><code>tonygitlens.compareWorktreeBranch</code></td>
+            <td>Compare Worktree Branch with...</td>
+            <td>Worktree Item Context Menu</td>
+            <td>Pre-selects worktree branch as base and prompts for target branch.</td>
+          </tr>
+          <tr>
+            <td><code>tonygitlens.swapComparison</code></td>
+            <td>Swap Base and Target</td>
+            <td>Comparison View Title & Node Menu</td>
+            <td>Inverts the comparison (target ↔ base).</td>
+          </tr>
+          <tr>
+            <td><code>tonygitlens.clearComparison</code></td>
+            <td>Clear Comparison</td>
+            <td>Comparison View Title Menu</td>
+            <td>Clears current comparison and returns to welcome screen.</td>
+          </tr>
+          <tr>
+            <td><code>tonygitlens.diffCompareFile</code></td>
+            <td>View File Diff</td>
+            <td>Click on Comparison File Item</td>
+            <td>Opens side-by-side diff comparing the file between the two branch tips.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
     <section id="spec-roadmap">
-      <h3>6. Implementation Roadmap</h3>
+      <h3>7. Implementation Roadmap</h3>
       <div class="roadmap">
         <div class="roadmap-step active">
           <h4>Phase 1: Project Setup & Scaffolding — <span style="color: var(--green);">✓ Completed</span></h4>
@@ -971,11 +1106,15 @@ export interface CommitFileChange {
           <h4>Phase 5: Packaging & Installation — <span style="color: var(--green);">✓ Completed & Verified</span></h4>
           <p>Generated standalone <code>tonygitlens-0.1.0.vsix</code> package and verified installation into VS Code.</p>
         </div>
+        <div class="roadmap-step active">
+          <h4>Phase 6: Compare 2 Branches Feature — <span style="color: var(--accent);">🚀 Planned (Ready to Implement)</span></h4>
+          <p>Add branch discovery, ahead/behind commit query, three-dot file diffing, interactive QuickPick selectors, and dedicated comparison TreeView.</p>
+        </div>
       </div>
     </section>
 
     <section id="spec-loading">
-      <h3>7. Loading & Installation Guide</h3>
+      <h3>8. Loading & Installation Guide</h3>
       <p>
         TonyGitLens is packaged as a self-contained <code>.vsix</code> extension bundle, making it immediately installable in any VS Code desktop or remote environment.
       </p>
