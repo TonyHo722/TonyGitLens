@@ -5,6 +5,9 @@ import { WorktreeTreeDataProvider } from './providers/worktreeTreeDataProvider';
 import { BranchCompareTreeDataProvider } from './providers/branchCompareTreeDataProvider';
 import { CommitContentProvider } from './providers/commitContentProvider';
 import { WorktreeItem } from './tree/worktreeItem';
+import { WorktreeCompareItem } from './tree/worktreeCompareItem';
+import { CompareRootItem } from './tree/compareRootItem';
+import { CompareSectionItem } from './tree/compareSectionItem';
 import { CommitItem } from './tree/commitItem';
 import { CommitFileItem } from './tree/commitFileItem';
 import { CompareFileItem } from './tree/compareFileItem';
@@ -154,11 +157,177 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
+  // Helper to extract branch name from any tree item or argument
+  function resolveBranchName(item?: any): string | undefined {
+    if (!item) {
+      return undefined;
+    }
+    if (item instanceof WorktreeCompareItem) {
+      return item.branchName;
+    }
+    if (item instanceof WorktreeItem) {
+      return item.worktree.branch || path.basename(item.worktreePath);
+    }
+    if (item instanceof CompareSectionItem) {
+      return item.comparison.baseBranch;
+    }
+    if (item instanceof CompareRootItem) {
+      return item.comparison.baseBranch;
+    }
+    if (typeof item === 'string') {
+      return item;
+    }
+    if (item.worktreeItem instanceof WorktreeItem) {
+      return item.worktreeItem.worktree.branch || path.basename(item.worktreeItem.worktreePath);
+    }
+    if (item.worktree?.branch) {
+      return item.worktree.branch;
+    }
+    if (item.comparison?.baseBranch) {
+      return item.comparison.baseBranch;
+    }
+    return undefined;
+  }
+
+  // Clear comparison for a specific branch (or prompt if run without args)
+  async function handleClearBranchComparison(item?: any): Promise<void> {
+    const branchName = resolveBranchName(item);
+
+    if (branchName) {
+      if (!treeDataProvider.hasWorktreeComparison(branchName)) {
+        vscode.window.showInformationMessage(`No active comparison found for branch '${branchName}'.`);
+        return;
+      }
+      treeDataProvider.clearWorktreeComparison(branchName);
+      outputChannel.appendLine(`Cleared comparison for branch: ${branchName}`);
+
+      const currentGlobal = compareTreeDataProvider.getComparison();
+      if (currentGlobal && currentGlobal.baseBranch === branchName) {
+        compareTreeDataProvider.clearComparison();
+      }
+
+      vscode.window.showInformationMessage(`TonyGitLens: Cleared comparison for '${branchName}'`);
+      return;
+    }
+
+    // Interactive picker if called without item (e.g. from Command Palette)
+    const activeComparisons = treeDataProvider.getActiveComparisons();
+    if (activeComparisons.size === 0) {
+      vscode.window.showInformationMessage('No active branch comparisons to clear.');
+      return;
+    }
+
+    if (activeComparisons.size === 1) {
+      const [singleBranch] = Array.from(activeComparisons.keys());
+      treeDataProvider.clearWorktreeComparison(singleBranch);
+      outputChannel.appendLine(`Cleared comparison for branch: ${singleBranch}`);
+      const currentGlobal = compareTreeDataProvider.getComparison();
+      if (currentGlobal && currentGlobal.baseBranch === singleBranch) {
+        compareTreeDataProvider.clearComparison();
+      }
+      vscode.window.showInformationMessage(`TonyGitLens: Cleared comparison for '${singleBranch}'`);
+      return;
+    }
+
+    interface ClearPickItem extends vscode.QuickPickItem {
+      branch?: string;
+      clearAll?: boolean;
+    }
+
+    const picks: ClearPickItem[] = [];
+    for (const [branch, comp] of activeComparisons.entries()) {
+      picks.push({
+        label: `$(git-compare) ${branch}`,
+        description: `compared with '${comp.compareBranch}'`,
+        branch,
+      });
+    }
+    picks.push({
+      label: '$(clear-all) Clear All Branch Comparisons',
+      description: `Clear all ${activeComparisons.size} active comparisons`,
+      clearAll: true,
+    });
+
+    const selected = await vscode.window.showQuickPick(picks, {
+      placeHolder: 'Select a branch comparison to clear',
+    });
+
+    if (!selected) {
+      return;
+    }
+
+    if (selected.clearAll) {
+      treeDataProvider.clearWorktreeComparison();
+      compareTreeDataProvider.clearComparison();
+      vscode.window.showInformationMessage('TonyGitLens: Cleared all branch comparisons.');
+      outputChannel.appendLine('Cleared all branch comparisons.');
+    } else if (selected.branch) {
+      treeDataProvider.clearWorktreeComparison(selected.branch);
+      outputChannel.appendLine(`Cleared comparison for branch: ${selected.branch}`);
+      const currentGlobal = compareTreeDataProvider.getComparison();
+      if (currentGlobal && currentGlobal.baseBranch === selected.branch) {
+        compareTreeDataProvider.clearComparison();
+      }
+      vscode.window.showInformationMessage(`TonyGitLens: Cleared comparison for '${selected.branch}'`);
+    }
+  }
+
+  // Swap comparison base and target
+  async function handleSwapBranchComparison(item?: any): Promise<void> {
+    const branchName = resolveBranchName(item);
+    let comparison = branchName
+      ? treeDataProvider.getWorktreeComparison(branchName)
+      : compareTreeDataProvider.getComparison();
+
+    if (!comparison) {
+      vscode.window.showInformationMessage('No active branch comparison to swap.');
+      return;
+    }
+
+    const currentBase = comparison.baseBranch;
+    const currentCompare = comparison.compareBranch;
+    outputChannel.appendLine(`Swapping comparison for '${currentBase}': ${currentCompare} ↔ ${currentBase}`);
+
+    await vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Notification,
+        title: `Swapping comparison: ${currentCompare} ↔ ${currentBase}...`,
+        cancellable: false,
+      },
+      async () => {
+        const swapped = await gitService.getBranchComparison(
+          comparison!.repoRoot,
+          currentCompare,
+          currentBase
+        );
+        treeDataProvider.setWorktreeComparison(currentBase, swapped);
+        compareTreeDataProvider.setComparison(swapped);
+        vscode.window.showInformationMessage(
+          `TonyGitLens: Swapped comparison to ${currentCompare} ↔ ${currentBase}`
+        );
+      }
+    );
+  }
+
   // Command: Compare Worktree Branch (1-Selection GitLens flow)
   const compareWorktreeBranchCmd = vscode.commands.registerCommand(
     'tonygitlens.compareWorktreeBranch',
-    async (item?: WorktreeItem) => {
-      const repoRoot = (item?.worktreePath ? await gitService.getRepoRoot(item.worktreePath) : undefined) ||
+    async (item?: WorktreeItem | WorktreeCompareItem) => {
+      let wtPath: string | undefined;
+      let baseBranch: string | undefined;
+
+      if (item instanceof WorktreeCompareItem) {
+        wtPath = item.worktreePath;
+        baseBranch = item.branchName;
+      } else if (item instanceof WorktreeItem) {
+        wtPath = item.worktreePath;
+        baseBranch = item.worktree.branch || path.basename(item.worktreePath);
+      } else if (item && typeof (item as any).worktreePath === 'string') {
+        wtPath = (item as any).worktreePath;
+        baseBranch = (item as any).branchName || (item as any).worktree?.branch;
+      }
+
+      const repoRoot = (wtPath ? await gitService.getRepoRoot(wtPath) : undefined) ||
         (await getActiveRepoRoot());
 
       if (!repoRoot) {
@@ -166,10 +335,10 @@ export function activate(context: vscode.ExtensionContext) {
         return;
       }
 
-      const baseBranch = item?.worktree.branch || 'main';
+      const resolvedBase = baseBranch || 'main';
       const branches = await gitService.getBranches(repoRoot);
       const targetOptions = branches
-        .filter((b) => b.name !== baseBranch)
+        .filter((b) => b.name !== resolvedBase)
         .map((b) => ({
           label: b.name,
           description: b.isRemote ? '(remote)' : b.isCurrent ? '(current)' : '',
@@ -177,12 +346,12 @@ export function activate(context: vscode.ExtensionContext) {
         }));
 
       if (targetOptions.length === 0) {
-        vscode.window.showInformationMessage(`No other branches found to compare with '${baseBranch}'.`);
+        vscode.window.showInformationMessage(`No other branches found to compare with '${resolvedBase}'.`);
         return;
       }
 
       const selected = await vscode.window.showQuickPick(targetOptions, {
-        placeHolder: `Select branch to compare with '${baseBranch}'`,
+        placeHolder: `Select branch to compare with '${resolvedBase}'`,
       });
 
       if (!selected) {
@@ -190,23 +359,23 @@ export function activate(context: vscode.ExtensionContext) {
       }
 
       const compareBranch = selected.label;
-      outputChannel.appendLine(`Comparing branches: ${baseBranch} ↔ ${compareBranch}`);
+      outputChannel.appendLine(`Comparing branches: ${resolvedBase} ↔ ${compareBranch}`);
 
       vscode.window.withProgress(
         {
           location: vscode.ProgressLocation.Notification,
-          title: `Comparing ${baseBranch} with ${compareBranch}...`,
+          title: `Comparing ${resolvedBase} with ${compareBranch}...`,
           cancellable: false,
         },
         async () => {
           const comparison = await gitService.getBranchComparison(
             repoRoot,
-            baseBranch,
+            resolvedBase,
             compareBranch
           );
           compareTreeDataProvider.setComparison(comparison);
-          treeDataProvider.setWorktreeComparison(baseBranch, comparison);
-          vscode.window.showInformationMessage(`TonyGitLens: Comparing ${baseBranch} ↔ ${compareBranch}`);
+          treeDataProvider.setWorktreeComparison(resolvedBase, comparison);
+          vscode.window.showInformationMessage(`TonyGitLens: Comparing ${resolvedBase} ↔ ${compareBranch}`);
         }
       );
     }
@@ -275,29 +444,44 @@ export function activate(context: vscode.ExtensionContext) {
   // Command: Swap Base and Target in Comparison
   const swapComparisonCmd = vscode.commands.registerCommand(
     'tonygitlens.swapComparison',
-    async () => {
-      const current = compareTreeDataProvider.getComparison();
-      if (!current) {
+    handleSwapBranchComparison
+  );
+
+  // Command: Swap Specific Branch Comparison
+  const swapBranchComparisonCmd = vscode.commands.registerCommand(
+    'tonygitlens.swapBranchComparison',
+    handleSwapBranchComparison
+  );
+
+  // Command: Clear Branch Comparison (specific branch or picker)
+  const clearBranchComparisonCmd = vscode.commands.registerCommand(
+    'tonygitlens.clearBranchComparison',
+    handleClearBranchComparison
+  );
+
+  // Command: Clear Comparison (polymorphic: branch-specific if item passed, otherwise all)
+  const clearComparisonCmd = vscode.commands.registerCommand(
+    'tonygitlens.clearComparison',
+    async (item?: any) => {
+      if (item && resolveBranchName(item)) {
+        await handleClearBranchComparison(item);
         return;
       }
-
-      outputChannel.appendLine(`Swapping comparison: ${current.compareBranch} ↔ ${current.baseBranch}`);
-      const swapped = await gitService.getBranchComparison(
-        current.repoRoot,
-        current.compareBranch,
-        current.baseBranch
-      );
-      compareTreeDataProvider.setComparison(swapped);
-      treeDataProvider.setWorktreeComparison(current.compareBranch, swapped);
+      compareTreeDataProvider.clearComparison();
+      treeDataProvider.clearWorktreeComparison();
+      vscode.window.showInformationMessage('TonyGitLens: Cleared all comparisons.');
+      outputChannel.appendLine('Cleared all comparisons.');
     }
   );
 
-  // Command: Clear Comparison
-  const clearComparisonCmd = vscode.commands.registerCommand(
-    'tonygitlens.clearComparison',
+  // Command: Clear All Comparisons
+  const clearAllComparisonsCmd = vscode.commands.registerCommand(
+    'tonygitlens.clearAllComparisons',
     () => {
       compareTreeDataProvider.clearComparison();
       treeDataProvider.clearWorktreeComparison();
+      vscode.window.showInformationMessage('TonyGitLens: Cleared all comparisons.');
+      outputChannel.appendLine('Cleared all comparisons.');
     }
   );
 
@@ -371,7 +555,10 @@ export function activate(context: vscode.ExtensionContext) {
     compareWorktreeBranchCmd,
     compareBranchesCmd,
     swapComparisonCmd,
+    swapBranchComparisonCmd,
     clearComparisonCmd,
+    clearBranchComparisonCmd,
+    clearAllComparisonsCmd,
     refreshComparisonCmd,
     diffCompareFileCmd,
     workspaceFoldersWatcher

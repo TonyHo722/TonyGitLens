@@ -39,6 +39,18 @@ export class WorktreeTreeDataProvider implements vscode.TreeDataProvider<vscode.
     this._onDidChangeTreeData.fire();
   }
 
+  public hasWorktreeComparison(branchName: string): boolean {
+    return this.activeComparisons.has(branchName);
+  }
+
+  public getWorktreeComparison(branchName: string): BranchComparison | undefined {
+    return this.activeComparisons.get(branchName);
+  }
+
+  public getActiveComparisons(): Map<string, BranchComparison> {
+    return this.activeComparisons;
+  }
+
   public clearWorktreeComparison(branchName?: string): void {
     if (branchName) {
       this.activeComparisons.delete(branchName);

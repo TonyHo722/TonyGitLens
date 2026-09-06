@@ -1077,6 +1077,24 @@ export interface BranchInfo {
             <td><strong>Primary 1-Step Flow:</strong> Uses the worktree's branch as base, prompts for target branch via a single QuickPick, and loads comparison.</td>
           </tr>
           <tr>
+            <td><code>tonygitlens.clearBranchComparison</code></td>
+            <td>Clear Comparison</td>
+            <td>Inline <code>$(close)</code> on active comparison row, context menus, and Command Palette</td>
+            <td>Clears the active comparison specifically for the selected branch, immediately restoring the prompt item.</td>
+          </tr>
+          <tr>
+            <td><code>tonygitlens.swapBranchComparison</code></td>
+            <td>Swap Base and Target</td>
+            <td>Inline <code>$(arrow-swap)</code> on active comparison row & context menus</td>
+            <td>Swaps base and compare branches in-place for the specific branch comparison.</td>
+          </tr>
+          <tr>
+            <td><code>tonygitlens.clearAllComparisons</code></td>
+            <td>Clear All Comparisons</td>
+            <td>Worktrees View Header <code>$(clear-all)</code> & Command Palette</td>
+            <td>Clears all active branch comparisons across all worktrees.</td>
+          </tr>
+          <tr>
             <td><code>tonygitlens.compareBranches</code></td>
             <td>Compare Branches...</td>
             <td>Title Bar & Command Palette</td>
@@ -1091,8 +1109,8 @@ export interface BranchInfo {
           <tr>
             <td><code>tonygitlens.clearComparison</code></td>
             <td>Clear Comparison</td>
-            <td>Comparison View Title Menu</td>
-            <td>Clears current comparison and returns to welcome screen.</td>
+            <td>Comparison View Title Menu & Polymorphic Dispatch</td>
+            <td>Clears current comparison or branch-specific comparison depending on the invoked element.</td>
           </tr>
           <tr>
             <td><code>tonygitlens.diffCompareFile</code></td>

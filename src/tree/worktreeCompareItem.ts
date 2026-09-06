@@ -1,13 +1,14 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { WorktreeItem } from './worktreeItem';
-import { BranchComparison } from '../models/git';
+import { BranchComparison, Worktree } from '../models/git';
 
 export class WorktreeCompareItem extends vscode.TreeItem {
   public readonly worktreeItem: WorktreeItem;
   public readonly comparison?: BranchComparison;
 
   constructor(worktreeItem: WorktreeItem, comparison?: BranchComparison) {
-    const branchName = worktreeItem.worktree.branch || 'current';
+    const branchName = worktreeItem.worktree.branch || path.basename(worktreeItem.worktreePath);
 
     if (!comparison) {
       // Uncompared state: interactive prompt item
@@ -37,7 +38,8 @@ export class WorktreeCompareItem extends vscode.TreeItem {
       md.appendMarkdown(`### Comparison: **${branchName}** ↔ **${comparison.compareBranch}**\n\n`);
       md.appendMarkdown(`- **Commits Ahead:** ${ahead}\n`);
       md.appendMarkdown(`- **Commits Behind:** ${behind}\n`);
-      md.appendMarkdown(`- **Files Changed:** ${files}\n`);
+      md.appendMarkdown(`- **Files Changed:** ${files}\n\n`);
+      md.appendMarkdown(`*(Click \`$(close)\` to clear, \`$(arrow-swap)\` to swap, or \`$(git-compare)\` to change target)*`);
       this.tooltip = md;
 
       this.iconPath = new vscode.ThemeIcon('git-compare', new vscode.ThemeColor('charts.green'));
@@ -47,4 +49,17 @@ export class WorktreeCompareItem extends vscode.TreeItem {
     this.worktreeItem = worktreeItem;
     this.comparison = comparison;
   }
+
+  public get worktree(): Worktree {
+    return this.worktreeItem.worktree;
+  }
+
+  public get worktreePath(): string {
+    return this.worktreeItem.worktreePath;
+  }
+
+  public get branchName(): string {
+    return this.worktree.branch || path.basename(this.worktreePath);
+  }
 }
+

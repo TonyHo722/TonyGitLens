@@ -526,6 +526,7 @@
       <li><a href="#reload-vscode">🔄 How to Reload VS Code</a></li>
       <li><a href="#worktrees">🌲 Worktrees Explorer</a></li>
       <li><a href="#branch-compare">🔀 1-Click Branch Compare</a></li>
+      <li><a href="#clear-compare">✕ How to Clear Comparisons</a></li>
       <li><a href="#file-diffs">🔍 Side-by-Side Diffs</a></li>
       <li><a href="#commands-ref">⌨️ Keyboard & Commands</a></li>
     </ul>
@@ -766,6 +767,77 @@
       </div>
     </section>
 
+    <!-- Clear Compare Guide -->
+    <section id="clear-compare">
+      <h2>✕ How to Clear Comparisons for Each Branch</h2>
+      <p>
+        TonyGitLens provides <strong>5 quick ways</strong> to clear an active branch comparison so you can return your tree view to its default clean state whenever you finish inspecting changes:
+      </p>
+
+      <div class="grid-2">
+        <div class="card">
+          <h4>🖱️ Method 1: Inline ✕ Button on Hover (Fastest)</h4>
+          <p>
+            Hover your mouse over the active comparison item:<br>
+            <code>Compared with '&lt;branch&gt;'</code><br>
+            Three inline action buttons appear on the right. Click the <strong><code>✕</code> (Clear Comparison)</strong> button.<br>
+            <em>The comparison section immediately collapses and resets back to <code>Compare '&lt;branch&gt;' with...</code>!</em>
+          </p>
+        </div>
+
+        <div class="card">
+          <h4>📋 Method 2: Right-Click "Compared with..."</h4>
+          <p>
+            Right-click directly on the <code>Compared with '&lt;branch&gt;'</code> row in the tree view and select <strong>"Clear Comparison"</strong> from the context menu.
+          </p>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top: 1rem;">
+        <div class="card">
+          <h4>🌿 Method 3: Right-Click the Branch / Worktree</h4>
+          <p>
+            Right-click the parent branch row (e.g. <code>🌿 main</code>) and select <strong>"Clear Comparison"</strong>. This clears any active comparison attached to that branch.
+          </p>
+        </div>
+
+        <div class="card">
+          <h4>📁 Method 4: Right-Click Comparison Sub-Sections</h4>
+          <p>
+            Right-click any sub-item inside the comparison (such as <code>Files Changed</code>, <code>Commits Ahead</code>, or <code>Commits Behind</code>) and select <strong>"Clear Comparison"</strong>.
+          </p>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top: 1rem;">
+        <div class="card">
+          <h4>🧹 Method 5: Title Bar "Clear All Comparisons"</h4>
+          <p>
+            Click the <strong><code>$(clear-all)</code></strong> icon in the header toolbar of the <strong>Worktrees</strong> panel to dismiss all active branch comparisons across all worktrees at once.
+          </p>
+        </div>
+
+        <div class="card">
+          <h4>⌨️ Method 6: Command Palette Picker</h4>
+          <p>
+            Press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd> and run <strong><code>TonyGitLens: Clear Branch Comparison</code></strong>.<br>
+            If multiple branches are being compared, an interactive QuickPick lets you choose which branch to clear or select <em>"Clear All Branch Comparisons"</em>.
+          </p>
+        </div>
+      </div>
+
+      <div class="callout tip" style="margin-top: 1.5rem;">
+        <div class="callout-title">💡 Bonus: More Actions on Active Comparisons</div>
+        <p style="margin-bottom: 0.5rem;">
+          When hovering over <code>Compared with '&lt;branch&gt;'</code>, you can also:
+        </p>
+        <ul style="margin-bottom: 0;">
+          <li><strong><code>$(arrow-swap)</code> Swap Base &amp; Target:</strong> Reverses comparison direction in-place without re-selecting branches.</li>
+          <li><strong><code>$(git-compare)</code> Change Target:</strong> Select a different branch to compare against without clearing first!</li>
+        </ul>
+      </div>
+    </section>
+
     <!-- File Diffs -->
     <section id="file-diffs">
       <h2>🔍 Feature 3: Native Side-by-Side Diffs</h2>
@@ -799,7 +871,22 @@
           <tr>
             <td><strong>Compare with...</strong></td>
             <td><code>tonygitlens.compareWorktreeBranch</code></td>
-            <td>Child item under branch or inline <code>$(git-compare)</code></td>
+            <td>Child item under branch, inline <code>$(git-compare)</code></td>
+          </tr>
+          <tr>
+            <td><strong>Clear Comparison (Branch)</strong></td>
+            <td><code>tonygitlens.clearBranchComparison</code></td>
+            <td>Inline <code>$(close)</code> on compare row, or right-click context menu</td>
+          </tr>
+          <tr>
+            <td><strong>Swap Base and Target</strong></td>
+            <td><code>tonygitlens.swapBranchComparison</code></td>
+            <td>Inline <code>$(arrow-swap)</code> on compare row, or right-click menu</td>
+          </tr>
+          <tr>
+            <td><strong>Clear All Comparisons</strong></td>
+            <td><code>tonygitlens.clearAllComparisons</code></td>
+            <td>Worktrees title bar <code>$(clear-all)</code> or Command Palette</td>
           </tr>
           <tr>
             <td><strong>Compare Branches...</strong></td>
@@ -807,14 +894,14 @@
             <td>Command Palette or Compare View title bar</td>
           </tr>
           <tr>
-            <td><strong>Swap Base and Target</strong></td>
+            <td><strong>Swap Base and Target (Global)</strong></td>
             <td><code>tonygitlens.swapComparison</code></td>
-            <td>Title bar button <code>⇄</code> in Compare Branches</td>
+            <td>Title bar button <code>⇄</code> in Compare Branches panel</td>
           </tr>
           <tr>
-            <td><strong>Clear Comparison</strong></td>
+            <td><strong>Clear Comparison (Global)</strong></td>
             <td><code>tonygitlens.clearComparison</code></td>
-            <td>Title bar button <code>✕</code> in Compare Branches</td>
+            <td>Title bar button <code>✕</code> in Compare Branches panel</td>
           </tr>
           <tr>
             <td><strong>Open Worktree in New Window</strong></td>
