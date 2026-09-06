@@ -971,26 +971,35 @@ export interface CommitFileChange {
     <section id="spec-compare">
       <h3>6. Compare 2 Branches Specification (Phase 6)</h3>
       <p>
-        Developers frequently need to answer questions such as: <em>"What commits are on my feature branch that haven't merged into main?"</em> and <em>"What exact code changed between these two branches?"</em>. Building on GitLens's <strong>Search & Compare</strong> design, TonyGitLens will introduce a first-class <strong>Compare Branches</strong> experience.
+        In GitLens, comparing branches is <strong>context-anchored directly to the Worktree UI</strong>. When a user looks at a worktree in the sidebar, the base branch is already known. Rather than requiring two separate selection dialogs, GitLens provides an inline <strong>"Compare with..."</strong> action on each worktree row so the user only has to pick a <strong>single target branch</strong>.
       </p>
+
+      <div class="callout tip">
+        <div class="callout-title">GitLens-Inspired 1-Selection Workflow</div>
+        <ol style="margin-top: 0.5rem; margin-bottom: 0;">
+          <li><strong>Contextual Trigger:</strong> Click the inline <code>$(git-compare)</code> icon or right-click any Worktree item (e.g., <code>feature-auth</code>) &rarr; select <strong>"Compare with..."</strong>.</li>
+          <li><strong>Implicit Base:</strong> The base branch is automatically locked to <code>feature-auth</code>.</li>
+          <li><strong>Single Target Selection:</strong> A single QuickPick appears displaying all local & remote branches (e.g. <code>main</code>, <code>develop</code>, <code>staging</code>).</li>
+          <li><strong>Instant Comparison:</strong> As soon as the target branch is picked, the comparison displays the differences immediately.</li>
+        </ol>
+      </div>
 
       <div class="mermaid-container">
         <div class="diagram-header">
           <div class="diagram-title">
-            <span>🔀 Branch Comparison Workflow & Architecture</span>
+            <span>🔀 Context-Anchored Branch Comparison Sequence</span>
           </div>
         </div>
         <div class="mermaid-viewport">
           <div class="mermaid">
 flowchart TD
-    START["Trigger Compare<br/>(Title Icon / Context Menu / Palette)"] --> QP1["QuickPick 1: Select Base Branch<br/>(e.g., main)"]
-    QP1 --> QP2["QuickPick 2: Select Compare Branch<br/>(e.g., feature-auth)"]
-    QP2 --> QUERY["GitCliService<br/>1. git log base..target (Ahead)<br/>2. git log target..base (Behind)<br/>3. git diff --name-status base...target"]
-    QUERY --> PROVIDER["BranchCompareTreeDataProvider<br/>(Renders Comparison TreeView)"]
-    PROVIDER --> ROOT["Comparison Root: feature-auth ↔ main<br/>(Actions: Swap ⇄, Refresh ↻, Clear ✕)"]
-    ROOT --> FILES["📁 Files Changed (N)<br/>(Aggregated file-level diffs)"]
-    ROOT --> COMMITS["📦 Commits Ahead / Behind<br/>(Individual commit logs)"]
-    FILES --> DIFF["Click File -> vscode.diff<br/>(tonygitlens://ref/base vs tonygitlens://ref/compare)"]
+    WORKTREE["1. User clicks $(git-compare) on Worktree Item<br/>(e.g., on 'feature-auth' row in TreeView)"] --> IMPLICIT["2. Base Branch is Automatically Fixed<br/>(Base = 'feature-auth')"]
+    IMPLICIT --> QP["3. Single QuickPick: Select Target Branch<br/>(Prompt: 'Select branch to compare with feature-auth')"]
+    QP --> QUERY["4. GitCliService Executes Queries<br/>• git log base..target (Ahead)<br/>• git log target..base (Behind)<br/>• git diff --name-status base...target"]
+    QUERY --> VIEW["5. Comparison View Rendered<br/>🔀 feature-auth ↔ main [3 ahead, 1 behind]"]
+    VIEW --> FILES["📁 Files Changed (N)"]
+    VIEW --> COMMITS["📦 Commits Ahead & Behind"]
+    FILES --> DIFF["Click File -> Side-by-Side Diff Editor<br/>(tonygitlens://ref/base vs tonygitlens://ref/target)"]
           </div>
         </div>
       </div>
@@ -1050,16 +1059,16 @@ export interface BranchInfo {
         </thead>
         <tbody>
           <tr>
+            <td><code>tonygitlens.compareWorktreeBranch</code></td>
+            <td>Compare with...</td>
+            <td>Inline Icon <code>$(git-compare)</code> & Context Menu on Worktree Item</td>
+            <td><strong>Primary 1-Step Flow:</strong> Uses the worktree's branch as base, prompts for target branch via a single QuickPick, and loads comparison.</td>
+          </tr>
+          <tr>
             <td><code>tonygitlens.compareBranches</code></td>
             <td>Compare Branches...</td>
             <td>Title Bar & Command Palette</td>
-            <td>Opens interactive QuickPick selecting base & target branches.</td>
-          </tr>
-          <tr>
-            <td><code>tonygitlens.compareWorktreeBranch</code></td>
-            <td>Compare Worktree Branch with...</td>
-            <td>Worktree Item Context Menu</td>
-            <td>Pre-selects worktree branch as base and prompts for target branch.</td>
+            <td>Fallback flow when comparing two arbitrary branches without an active worktree context.</td>
           </tr>
           <tr>
             <td><code>tonygitlens.swapComparison</code></td>
